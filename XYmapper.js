@@ -24,6 +24,50 @@ var wiringVFlip = "top";
 var wiringHFlip = "left";
 var freestyleCounter = 0;
 var lastFreestyle = 0;
+var lastClickedIndex = -1;
+
+function togglePixelState(pixelIndex) {
+  let element = document.getElementById('pixel' + pixelIndex);
+  if (!element) {
+    console.error("togglePixelState: Element not found for pixelIndex " + pixelIndex);
+    return;
+  }
+
+  if (pixelarray[pixelIndex][0] == "E") {
+    if (freeStyle != 1) {
+      if (discardP == 1) {
+        element.className = "disabledPixel";
+        pixelarray[pixelIndex][0] = "D";
+      } else {
+        element.className = "hiddenPixel";
+        pixelarray[pixelIndex][0] = "H";
+      }
+      clearArrows(element);
+    }
+    else if (freeStyle == 1 && pixelarray[pixelIndex][3] == lastFreestyle) {
+      pixelarray[pixelIndex][3] = -1;
+      lastFreestyle = lastFreestyle - 1; 
+      freestyleCounter--; 
+      element.className = "disabledPixel";
+      pixelarray[pixelIndex][0] = "D";
+      clearArrows(element);
+    }
+  }
+  else if (pixelarray[pixelIndex][0] == "D") {
+    element.className = "ledpixel";
+    pixelarray[pixelIndex][0] = "E";
+    
+    if (freeStyle == 1) {
+      pixelarray[pixelIndex][3] = freestyleCounter; 
+      lastFreestyle = freestyleCounter;
+      freestyleCounter++;
+    }
+  }
+  else if (pixelarray[pixelIndex][0] == "H") {
+    element.className = "ledpixel";
+    pixelarray[pixelIndex][0] = "E";
+  }
+}
 
 function lightMode() {
   var element = document.body;
@@ -210,7 +254,7 @@ function buildGrid(numBoxes) {
       } else {
         gridHTML += '<div class="ledpixel" id="pixel' + idnum + '"';
       }
-      gridHTML += 'onclick="clearButton(this);">';
+      gridHTML += 'onclick="clearButton(this, event);">';
       gridHTML += '<div class="ledtext" id="pixeltext' + idnum + '">' + pixelarray[idnum][2] + '</div>';
       gridHTML += '</div>';
       idnum++;
@@ -256,41 +300,25 @@ function clearArrows(element) {
   }
 }
 
-function clearButton(event) {
-  eventindex = parseInt((event.id).replace(/[^0-9\.]/g, ''), 10);
-  if (pixelarray[eventindex][0] == "E") {
-    if (freeStyle != 1) {
-      if (discardP == 1) {
-        event.className = "disabledPixel";
-        pixelarray[eventindex][0] = "D";
-      } else {
-        event.className = "hiddenPixel";
-        pixelarray[eventindex][0] = "H";
-      }
-      clearArrows(event);
+function clearButton(element, event) {
+  let currentIndex = parseInt((element.id).replace(/[^0-9\.]/g, ''), 10);
+  console.log("Shift key pressed: " + event.shiftKey);
+
+  if (event.shiftKey && lastClickedIndex !== -1) {
+    const startIndex = Math.min(lastClickedIndex, currentIndex);
+    const endIndex = Math.max(lastClickedIndex, currentIndex);
+    for (let i = startIndex; i <= endIndex; i++) {
+      togglePixelState(i);
     }
-    else if (freeStyle == 1 && pixelarray[eventindex][3] == lastFreestyle) {
-      pixelarray[eventindex][3] = -1;
-      lastFreestyle = lastFreestyle - 1;
-      freestyleCounter--;
-      event.className = "disabledPixel";
-      pixelarray[eventindex][0] = "D";
-      clearArrows(event);
+    lastClickedIndex = currentIndex; // Update lastClickedIndex after range selection
+  } else {
+    togglePixelState(currentIndex);
+    if (!event.shiftKey) { // This part remains from the previous implementation
+      lastClickedIndex = currentIndex;
+    } else {
+      // If shift was pressed but lastClickedIndex was -1, this click becomes the new lastClickedIndex
+      lastClickedIndex = currentIndex; 
     }
-  }
-  else if (pixelarray[eventindex][0] == "D") {
-    event.className = "ledpixel";
-    pixelarray[eventindex][0] = "E";
-    
-    if (freeStyle == 1) {
-      pixelarray[eventindex][3] = freestyleCounter;
-      lastFreestyle = freestyleCounter;
-      freestyleCounter++;
-    }
-  }
-  else if (pixelarray[eventindex][0] == "H") {
-    event.className = "ledpixel";
-    pixelarray[eventindex][0] = "E";
   }
   
   renumberLEDs();
