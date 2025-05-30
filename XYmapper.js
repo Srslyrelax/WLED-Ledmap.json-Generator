@@ -302,25 +302,29 @@ function clearArrows(element) {
 
 function clearButton(element, event) {
   let currentIndex = parseInt((element.id).replace(/[^0-9\.]/g, ''), 10);
-  console.log("Shift key pressed: " + event.shiftKey);
+  // The console log for shift key can remain or be removed.
+  // console.log("Shift key pressed: " + event.shiftKey);
 
-  if (event.shiftKey && lastClickedIndex !== -1) {
-    const startIndex = Math.min(lastClickedIndex, currentIndex);
-    const endIndex = Math.max(lastClickedIndex, currentIndex);
-    for (let i = startIndex; i <= endIndex; i++) {
-      togglePixelState(i);
+  if (event.shiftKey && lastClickedIndex !== -1 && lastClickedIndex !== currentIndex) {
+    togglePixelState(currentIndex); // Toggle the current shift-clicked item
+
+    let startRange = Math.min(lastClickedIndex, currentIndex) + 1;
+    let endRange = Math.max(lastClickedIndex, currentIndex) - 1;
+
+    for (let i = startRange; i <= endRange; i++) {
+        togglePixelState(i); // Toggle items strictly between lastClicked and current
     }
-    lastClickedIndex = currentIndex; // Update lastClickedIndex after range selection
-  } else {
+    // lastClickedIndex should be updated to the current shift-clicked pixel
+    lastClickedIndex = currentIndex; 
+  } else { 
+    // This handles:
+    // 1. Normal click (no shift)
+    // 2. Shift-click when lastClickedIndex is -1 (no prior click)
+    // 3. Shift-click on the *same* pixel as lastClickedIndex
     togglePixelState(currentIndex);
-    if (!event.shiftKey) { // This part remains from the previous implementation
-      lastClickedIndex = currentIndex;
-    } else {
-      // If shift was pressed but lastClickedIndex was -1, this click becomes the new lastClickedIndex
-      lastClickedIndex = currentIndex; 
-    }
+    lastClickedIndex = currentIndex;
   }
-  
+
   renumberLEDs();
   drawArrows();
   printMap();
